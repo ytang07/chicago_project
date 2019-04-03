@@ -14,15 +14,27 @@ knitr::opts_chunk$set(echo = TRUE)
 #Uploading Dataset
 CPS.data <- read.csv("Chicago_Public_Schools_-_Progress_Report_Cards__2011-2012_.csv")
 
-head(CPS.data)
-
 #Cleaning Data
 CPS.data$Link <- NULL
 CPS.data$Phone.Number <- NULL
 CPS.data$State <- NULL
 CPS.data$Street.Address <- NULL
 CPS.data$Location <- NULL
+CPS.data$City <- NULL
+
+#View
+head(CPS.data)
 ```
+
+```{r}
+#Removing NDA values from variables and changing the values to NA
+for(i in names(CPS.data)) {
+  for(j in 1:nrow(CPS.data)){
+    if(isTRUE(CPS.data[j,i] == "NDA")) { CPS.data[j, i] = NA}
+  }
+}
+```
+
 
 ```{r}
 # Erin's section
@@ -37,6 +49,11 @@ CPS.data$Location <- NULL
 ```
 
 #Ryan's Section
+Ideas:
+
+-  Other Variables connection to classificaiton
+- 
+
 ```{r}
 # Ryan's section
 
