@@ -7,7 +7,12 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
+```
+```{r}
+library(dplyr)
+library(MASS)
+library(ggplot2)
+library(purrr)
 ```
 
 #Data Cleaning
@@ -22,7 +27,6 @@ CPS.data$State <- NULL
 CPS.data$Street.Address <- NULL
 CPS.data$Location <- NULL
 CPS.data$City <- NULL
-
 ```
 
 ```{r}
@@ -36,12 +40,11 @@ for(i in names(CPS.data)) {
 #View
 head(CPS.data)
 ```
-
 ```{r}
 #Data that only describes the numeric variables
-numerical.data <- 
+numeric.data <- CPS.data[, map_lgl(CPS.data, is.numeric)]
+head(numeric.data)
 ```
-
 
 ```{r}
 # Erin's section
@@ -73,6 +76,73 @@ ggplot(filter(CPS.data, Average.Teacher.Attendance != 0)) +
 
 #
 ```
+
+#Numerical Analysis
+```{r}
+#Correlation of all Variables
+correlation.matrix <- cor(numeric.data, use = "complete.obs")
+correlation.dataset <- as.data.frame(correlation.matrix)
+most.correlation <- which(abs(correlation.matrix) < 1 & abs(correlation.matrix) > .75)
+
+rows.list <- list()
+columns.list <- list()
+j <- 1
+#For Loop for finding maximum correlations
+for(i in most.correlation) {
+  #Correlation
+  row <- ceiling(i/23)
+  column <- i%%23
+  rows.list[[j]] <- rownames(correlation.dataset[row,])
+  columns.list[[j]] <- names(correlation.dataset)[column]
+  j = j+1
+}
+
+row.column.names = cbind(rows.list, columns.list)
+row.column.names
+```
+
+```{r}
+#New Dataframe To hold Rows/ Columns
+row.column.dataframe <- data.frame(
+  row = NULL,
+  column = NULL
+)
+#putting values in dataframe
+for(i in 1:length(rows.list)) {
+  newRow = data.frame(row = rows.list[[i]], column = columns.list[[i]])
+  row.column.dataframe <- rbind(row.column.dataframe, newRow)
+}
+
+#Changing variable types to character
+row.column.dataframe$row <- as.character(row.column.dataframe$row)
+row.column.dataframe$column <- as.character(row.column.dataframe$column)
+
+#Removing Duplicates
+for (i in 1:nrow(row.column.dataframe))
+{
+    row.column.dataframe[i, ] = sort(row.column.dataframe[i, ])
+}
+row.column.dataframe <- row.column.dataframe[!duplicated(row.column.dataframe),]
+
+#Viewing Dataframe of Variables with the most Correlation
+row.column.dataframe
+```
+```{r}
+#For Loop For Creating Scatterplots of data with the Greatest Correlation
+for(i in 1:nrow(row.column.dataframe)) {
+  #Extract column and row variable
+  row <- row.column.dataframe[i, 1]
+  column <- row.column.dataframe[[i, 2]]
+  #Plot
+  print(ggplot(CPS.data) +
+    geom_point(aes_string(x = row, y = column), color = "blue4") +
+    geom_smooth(aes_string(x = row, y = column)) +
+    theme_minimal() +
+    ggtitle("Correlations"))
+}
+```
+
+
 
 ```{r}
 # Jason's section
