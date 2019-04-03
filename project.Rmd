@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
+#Data Cleaning
 ```{r}
 #Uploading Dataset
 CPS.data <- read.csv("Chicago_Public_Schools_-_Progress_Report_Cards__2011-2012_.csv")
@@ -22,17 +23,23 @@ CPS.data$Street.Address <- NULL
 CPS.data$Location <- NULL
 CPS.data$City <- NULL
 
-#View
-head(CPS.data)
 ```
 
 ```{r}
 #Removing NDA values from variables and changing the values to NA
 for(i in names(CPS.data)) {
-  for(j in 1:nrow(CPS.data)){
+  for(j in 1:nrow(CPS.data)) {
     if(isTRUE(CPS.data[j,i] == "NDA")) { CPS.data[j, i] = NA}
   }
 }
+
+#View
+head(CPS.data)
+```
+
+```{r}
+#Data that only describes the numeric variables
+numerical.data <- 
 ```
 
 
@@ -48,6 +55,7 @@ for(i in names(CPS.data)) {
 # Norma's section
 ```
 
+
 #Ryan's Section
 Ideas:
 
@@ -55,8 +63,15 @@ Ideas:
 - 
 
 ```{r}
-# Ryan's section
+#Safety and Parents
+ggplot(CPS.data) +
+  geom_point(aes(x = Safety.Score, y = Parent.Environment.Score, col = Adequate.Yearly.Progress.Made.))
 
+#Attendance
+ggplot(filter(CPS.data, Average.Teacher.Attendance != 0)) +
+  geom_point(aes(x = Average.Student.Attendance, y = Average.Teacher.Attendance, col = Adequate.Yearly.Progress.Made.))
+
+#
 ```
 
 ```{r}
