@@ -1,5 +1,5 @@
 # chicago_project
-Research Project associated with **STOR565 - Machine Learning** at UNC, Fall 2019.
+Research Project associated with **STOR565 - Machine Learning** at UNC, Spring 2019.
 
 ## Group members 
 * Erin Lyons
