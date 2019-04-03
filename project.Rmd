@@ -13,6 +13,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 #Uploading Dataset
 CPS.data <- read.csv("Chicago_Public_Schools_-_Progress_Report_Cards__2011-2012_.csv")
+
+head(CPS.data)
+
+#Cleaning Data
+CPS.data$Link <- NULL
+CPS.data$Phone.Number <- NULL
+CPS.data$State <- NULL
+CPS.data$Street.Address <- NULL
+CPS.data$Location <- NULL
 ```
 
 ```{r}
