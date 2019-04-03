@@ -11,6 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
+#Uploading Dataset
+CPS.data <- read.csv("Chicago_Public_Schools_-_Progress_Report_Cards__2011-2012_.csv")
+```
+
+```{r}
 # Erin's section
 ```
 
@@ -22,8 +27,10 @@ knitr::opts_chunk$set(echo = TRUE)
 # Norma's section
 ```
 
+#Ryan's Section
 ```{r}
 # Ryan's section
+
 ```
 
 ```{r}
