@@ -9,3 +9,23 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 
 ```
+
+```{r}
+# Erin's section
+```
+
+```{r}
+# Charles' section
+```
+
+```{r}
+# Norma's section
+```
+
+```{r}
+# Ryan's section
+```
+
+```{r}
+# Jason's section
+```
