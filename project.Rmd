@@ -30,6 +30,7 @@ CPS.data$State <- NULL
 CPS.data$Street.Address <- NULL
 CPS.data$Location <- NULL
 CPS.data$City <- NULL
+CPS.data$RCDTS.Code <- NULL
 ```
 
 ```{r}
@@ -65,7 +66,7 @@ head(numeric.data)
 #Ryan's Section
 Ideas:
 
--  Other Variables connection to classificaiton
+- Other Variables connection to classificaiton
 - Are there certain ways to categorize elementary middle and high school?
 
 ```{r}
@@ -80,12 +81,16 @@ ggplot(filter(CPS.data, Average.Teacher.Attendance != 0)) +
 #
 ```
 
+```{r}
+numeric.data
+```
+
 #Numerical Analysis
 ```{r}
 #Correlation of all Variables
 correlation.matrix <- cor(numeric.data, use = "complete.obs")
 correlation.dataset <- as.data.frame(correlation.matrix)
-most.correlation <- which(abs(correlation.matrix) < 1 & abs(correlation.matrix) > .75)
+most.correlation <- which(abs(correlation.matrix) < 1 & abs(correlation.matrix) > .70)
 
 rows.list <- list()
 columns.list <- list()
@@ -93,8 +98,8 @@ j <- 1
 #For Loop for finding maximum correlations
 for(i in most.correlation) {
   #Correlation
-  row <- ceiling(i/23)
-  column <- i%%23
+  row <- ceiling(i/ncol(numeric.data))
+  column <- ifelse(i%%ncol(numeric.data) == 0, ncol(numeric.data), i%%ncol(numeric.data))
   rows.list[[j]] <- rownames(correlation.dataset[row,])
   columns.list[[j]] <- names(correlation.dataset)[column]
   j = j+1
@@ -127,6 +132,8 @@ row.column.dataframe <- row.column.dataframe[!duplicated(row.column.dataframe),]
 #Viewing Dataframe of Variables with the most Correlation
 row.column.dataframe
 ```
+
+
 
 ```{r}
 #For Loop For Creating Scatterplots of data with the Greatest Correlation
@@ -176,7 +183,78 @@ ridgeMod = cv.glmnet(modMatrix, y = na.omit(numeric.data)$Average.Student.Attend
 plot(ridgeMod)
 ```
 
+##Classification for School Grade-level
+```{r}
+#Function that removes collinearity for data
+remove.collinearity <- function(data, c) {
+  #Correlation of all Variables
+  correlation.matrix <- cor(data, use = "complete.obs")
+  correlation.dataset <- as.data.frame(correlation.matrix)
+  most.correlation <- which(abs(correlation.matrix) < 1 & abs(correlation.matrix) > c)
 
+  rows.list <- list()
+  columns.list <- list()
+  j <- 1
+  #For Loop for finding maximum correlations
+  for(i in most.correlation) {
+    #Correlation
+    row <- ceiling(i/ncol(data))
+    column <- i%%ncol(data)
+    rows.list[[j]] <- rownames(correlation.dataset[row,])
+    columns.list[[j]] <- names(correlation.dataset)[column]
+    j = j+1
+  }
+
+  row.column.names = cbind(rows.list, columns.list)
+
+  #New Dataframe To hold Rows/ Columns
+  row.column.dataframe <- data.frame(
+    row = NULL,
+    column = NULL
+  )
+  #putting values in dataframe
+  for(i in 1:length(rows.list)) {
+    newRow = data.frame(row = rows.list[[i]], column = columns.list[[i]])
+    row.column.dataframe <- rbind(row.column.dataframe, newRow)
+  }
+
+  #Changing variable types to character
+  row.column.dataframe$row <- as.character(row.column.dataframe$row)
+  row.column.dataframe$column <- as.character(row.column.dataframe$column)
+
+  #Removing Duplicates
+  for (i in 1:nrow(row.column.dataframe))
+  {
+      row.column.dataframe[i, ] = sort(row.column.dataframe[i, ])
+  }
+  row.column.dataframe <- row.column.dataframe[!duplicated(row.column.dataframe),]
+
+  #Dataframe of Variables with the most Correlation
+  table <- row.column.dataframe
+  
+  #creates new dataframe without correlations above c
+  new.data = data
+  for(i in 1:nrow(table)) {
+    new.data[,table[i,2]] <- NULL
+  }
+
+  return(new.data)
+}
+```
+
+```{r}
+newdata <- remove.collinearity(numeric.data, .73)
+
+newdata = numeric.data %>%
+  select_if(Negate(is.integer)) %>%
+  select_if(is.numeric)
+
+newdata <- cbind(numeric.data, CPS.data$Elementary..Middle..or.High.School)
+newdata$Elementary..Middle..or.High.School <- newdata$`CPS.data$Elementary..Middle..or.High.School`
+newdata$`CPS.data$Elementary..Middle..or.High.School`<- NULL
+
+ldaMod <- lda(Elementary..Middle..or.High.School~., data = newdata)
+```
 
 
 ```{r}
