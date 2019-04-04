@@ -8,11 +8,13 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
 ```{r}
 library(dplyr)
 library(MASS)
 library(ggplot2)
 library(purrr)
+library(leaps)
 ```
 
 #Data Cleaning
@@ -101,6 +103,7 @@ row.column.names = cbind(rows.list, columns.list)
 row.column.names
 ```
 
+
 ```{r}
 #New Dataframe To hold Rows/ Columns
 row.column.dataframe <- data.frame(
@@ -131,7 +134,7 @@ row.column.dataframe
 #For Loop For Creating Scatterplots of data with the Greatest Correlation
 for(i in 1:nrow(row.column.dataframe)) {
   #Extract column and row variable
-  row <- row.column.dataframe[i, 1]
+  row <- row.column.dataframe[[i, 1]]
   column <- row.column.dataframe[[i, 2]]
   #Plot
   print(ggplot(CPS.data) +
@@ -140,6 +143,17 @@ for(i in 1:nrow(row.column.dataframe)) {
     theme_minimal() +
     ggtitle("Correlations"))
 }
+```
+
+##How well can we predict student attendance?
+Goal - determine best model between lasso regression, ridge regression, and least squares regression with variable selection.
+```{r}
+#Least Squares Model
+linMod.SA <- lm (Average.Student.Attendance~., data = numeric.data)
+```
+
+```{r}
+
 ```
 
 
