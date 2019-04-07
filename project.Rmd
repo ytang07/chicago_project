@@ -154,7 +154,7 @@ for(i in 1:nrow(row.column.dataframe)) {
 Goal - determine best model between lasso regression, ridge regression, and least squares regression with variable selection.
 ```{r}
 #Least Squares Model
-linMod.SA <- lm(Average.Student.Attendance~., data = numeric.data)
+fullLinMod.SA <- lm(Average.Student.Attendance~., data = numeric.data)
 ```
 
 ```{r}
@@ -165,11 +165,44 @@ plot(summary.backward$cp, pch = 19)
 ```
 
 ```{r}
+step(fullLinMod.SA, direction = "backward")
+```
+
+```{r}
+linMod.Backward = lm(Average.Student.Attendance ~ Safety.Score + Environment.Score + 
+    Instruction.Score + Rate.of.Misconducts..per.100.students. + 
+    Individualized.Education.Program.Compliance.Rate + ISAT.Exceeding.Math.. + 
+    ISAT.Exceeding.Reading.. + ISAT.Value.Add.Math + College.Enrollment..number.of.students. + 
+    General.Services.Route + Community.Area.Number, data = numeric.data)
+
+plot(linMod.Backward$fitted.values, linMod.Backward$residuals)
+abline(0,0)
+```
+
+```{r}
 #Foward Selection
 FW.linMod.SA <- regsubsets(Average.Student.Attendance~., data= numeric.data, nvmax= 20, method = "forward")
 summary.forward = summary(BE.linMod.SA)
 plot(summary.forward$cp, pch = 19)
 ```
+```{r}
+step(fullLinMod.SA, direction = "forward")
+```
+
+```{r}
+linMod.Forward <- lm(formula = Average.Student.Attendance ~ School.ID + ZIP.Code + 
+    Safety.Score + Environment.Score + Instruction.Score + Rate.of.Misconducts..per.100.students. + 
+    Average.Teacher.Attendance + Individualized.Education.Program.Compliance.Rate + 
+    ISAT.Exceeding.Math.. + ISAT.Exceeding.Reading.. + ISAT.Value.Add.Math + 
+    ISAT.Value.Add.Read + College.Enrollment..number.of.students. + 
+    General.Services.Route + X_COORDINATE + Y_COORDINATE + Latitude + 
+    Longitude + Community.Area.Number + Ward + Police.District, 
+    data = numeric.data)
+
+plot(linMod.Forward$fitted.values, linMod.Forward$residuals)
+abline(0, 0)
+```
+
 
 ```{r}
 #Lasso Regression
@@ -199,7 +232,7 @@ remove.collinearity <- function(data, c) {
   for(i in most.correlation) {
     #Correlation
     row <- ceiling(i/ncol(data))
-    column <- i%%ncol(data)
+    column <- ifelse(i%%ncol(data) == 0, ncol(data), i%%ncol(data))
     rows.list[[j]] <- rownames(correlation.dataset[row,])
     columns.list[[j]] <- names(correlation.dataset)[column]
     j = j+1
@@ -237,24 +270,28 @@ remove.collinearity <- function(data, c) {
   for(i in 1:nrow(table)) {
     new.data[,table[i,2]] <- NULL
   }
-
   return(new.data)
 }
 ```
 
 ```{r}
-newdata <- remove.collinearity(numeric.data, .73)
-
 newdata = numeric.data %>%
   select_if(Negate(is.integer)) %>%
   select_if(is.numeric)
 
+newdata <- remove.collinearity(newdata, .1)
+newdata
 newdata <- cbind(numeric.data, CPS.data$Elementary..Middle..or.High.School)
 newdata$Elementary..Middle..or.High.School <- newdata$`CPS.data$Elementary..Middle..or.High.School`
 newdata$`CPS.data$Elementary..Middle..or.High.School`<- NULL
 
 ldaMod <- lda(Elementary..Middle..or.High.School~., data = newdata)
 ```
+
+```{r}
+
+```
+
 
 
 ```{r}
