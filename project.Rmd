@@ -73,7 +73,7 @@ ggplot(filter(CPS.data, Average.Teacher.Attendance != 0)) +
 2nd graph: Most progress happened when attendance was high for both parties. 
 
 ```{r}
-numeric.data
+head(numeric.data)
 ```
 
 #Numerical Analysis
@@ -143,69 +143,47 @@ for(i in 1:nrow(row.column.dataframe)) {
 
 ##How well can we predict student attendance?
 Goal - determine best model between lasso regression, ridge regression, and least squares regression with variable selection.
+
+
 ```{r}
+#Data frame with no NA values
+no.na <- na.omit(numeric.data)
+test.set <- sample_n(no.na, 100)
+train.set <- anti_join(no.na, test.set)
+
 #Least Squares Model
-fullLinMod.SA <- lm(Average.Student.Attendance~., data = numeric.data)
-```
+fullLinMod.SA <- lm(Average.Student.Attendance~., data = train.set)
 
-```{r}
-#Backward Elimination
-BE.linMod.SA = regsubsets(Average.Student.Attendance~., data= numeric.data, nvmax= 20, method = "backward")
-summary.backward = summary(BE.linMod.SA)
-plot(summary.backward$cp, pch = 19)
-```
+#Stepwise
+backwards <- step(fullLinMod.SA, direction = "backward", trace = FALSE)
+forwards <- step(fullLinMod.SA, direction = "backward", trace = FALSE)
 
-```{r}
-step(fullLinMod.SA, direction = "backward")
-```
-
-```{r}
-linMod.Backward = lm(Average.Student.Attendance ~ Safety.Score + Environment.Score + 
-    Instruction.Score + Rate.of.Misconducts..per.100.students. + 
-    Individualized.Education.Program.Compliance.Rate + ISAT.Exceeding.Math.. + 
-    ISAT.Exceeding.Reading.. + ISAT.Value.Add.Math + College.Enrollment..number.of.students. + 
-    General.Services.Route + Community.Area.Number, data = numeric.data)
-
-plot(linMod.Backward$fitted.values, linMod.Backward$residuals)
-abline(0,0)
-```
-
-```{r}
-#Foward Selection
-FW.linMod.SA <- regsubsets(Average.Student.Attendance~., data= numeric.data, nvmax= 20, method = "forward")
-summary.forward = summary(BE.linMod.SA)
-plot(summary.forward$cp, pch = 19)
-```
-```{r}
-step(fullLinMod.SA, direction = "forward")
-```
-
-```{r}
-linMod.Forward <- lm(formula = Average.Student.Attendance ~ School.ID + ZIP.Code + 
-    Safety.Score + Environment.Score + Instruction.Score + Rate.of.Misconducts..per.100.students. + 
-    Average.Teacher.Attendance + Individualized.Education.Program.Compliance.Rate + 
-    ISAT.Exceeding.Math.. + ISAT.Exceeding.Reading.. + ISAT.Value.Add.Math + 
-    ISAT.Value.Add.Read + College.Enrollment..number.of.students. + 
-    General.Services.Route + X_COORDINATE + Y_COORDINATE + Latitude + 
-    Longitude + Community.Area.Number + Ward + Police.District, 
-    data = numeric.data)
-
-plot(linMod.Forward$fitted.values, linMod.Forward$residuals)
-abline(0, 0)
-```
-
-
-```{r}
 #Lasso Regression
-modMatrix <- model.matrix(Average.Student.Attendance~., data= numeric.data)
-lassoMod = cv.glmnet(modMatrix, y = na.omit(numeric.data)$Average.Student.Attendance, alpha = 1, nfolds = 5)
-plot(lassoMod)
-```
-```{r}
+modMatrix <- model.matrix(Average.Student.Attendance~., data= train.set)
+lassoMod = cv.glmnet(modMatrix, y = train.set$Average.Student.Attendance, alpha = 1, nfolds = 5)
+
 #Ridge Regression
-ridgeMod = cv.glmnet(modMatrix, y = na.omit(numeric.data)$Average.Student.Attendance, alpha = 1, nfolds = 5)
-plot(ridgeMod)
+ridgeMod = cv.glmnet(modMatrix, y = train.set$Average.Student.Attendance, alpha = 0, nfolds = 5)
+
+#predictions
+full.predictions <- predict(fullLinMod.SA, test.set)
+backwards.predictions <- predict(backwards, test.set)
+forwards.predictions <- predict(forwards, test.set)
+lasso.predictions <- predict(lassoMod, test.set, type = "response")
+
+
+
+MSE.full = mean((full.predictions - test.set$Average.Student.Attendance)^2)
+MSE.back = mean((backwards.predictions - test.set$Average.Student.Attendance)^2)
+MSE.for = mean((forwards.predictions - test.set$Average.Student.Attendance)^2)
+
+
+MSE.full
+MSE.back
+MSE.for
 ```
+
+
 
 ##Classification for School Grade-level
 ```{r}
@@ -279,9 +257,6 @@ newdata$`CPS.data$Elementary..Middle..or.High.School`<- NULL
 ldaMod <- lda(Elementary..Middle..or.High.School~., data = newdata)
 ```
 
-```{r}
-
-```
 
 
 
