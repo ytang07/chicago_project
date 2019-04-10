@@ -7,6 +7,7 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+if(!require(neuralnet)) { install.packages("neuralnet", repos = "http://cran.us.r-project.org")}  
 ```
 
 ```{r}
@@ -16,6 +17,7 @@ library(ggplot2)
 library(purrr)
 library(leaps)
 library(glmnet)
+library(neuralnet)
 ```
 
 #Data Cleaning
@@ -31,6 +33,10 @@ CPS.data$Street.Address <- NULL
 CPS.data$Location <- NULL
 CPS.data$City <- NULL
 CPS.data$RCDTS.Code <- NULL
+CPS.data$Latitude <- NULL
+CPS.data$Longitude <- NULL
+CPS.data$X_COORDINATE <- NULL
+CPS.data$Y_COORDINATE <- NULL
 ```
 
 ```{r}
@@ -48,6 +54,43 @@ head(CPS.data)
 #Data that only describes the numeric variables
 numeric.data <- CPS.data[, map_lgl(CPS.data, is.numeric)]
 head(numeric.data)
+```
+
+```{r}
+# Erin's section
+```
+
+```{r}
+# Charles' section
+# set seed
+set.seed(100)
+# First obtain numeric values only
+numcols <- unlist(lapply(CPS.data, is.numeric))
+CPS.num <- na.omit(CPS.data[,numcols])
+# Second check correlations
+corrs <- cor(CPS.num)
+corrs[upper.tri(corrs)] <- 0
+diag(corrs) <- 0
+CPS.num.new <- scale(CPS.num[,!apply(corrs, 2, function(x) any (abs(x) > 0.7))])
+train_size <- floor(0.7*nrow(CPS.num.new))
+train_ind <- sample(seq_len(nrow(CPS.num.new)), size = train_size)
+CPS_train <- CPS.num.new[train_ind,]
+CPS_test <- CPS.num.new[-train_ind,]
+
+# use a simple neural network to predict Instruction Score
+nn1 = neuralnet(Instruction.Score ~ ., data=CPS_train)
+
+# check we get somewhat reasonable predictions
+nnpred <- compute(nn1, CPS_test)
+nnpred1_results <- ifelse(nnpred$net.result > iscore_med, 1, 0)
+aboveavg <- ifelse(CPS_test[,3] > iscore_med, 1, 0)
+sum(abs(nnpred1_results - aboveavg))
+# we see our naive neural network doesn't perform very well, misclassifying 50/131 test points
+
+```
+
+```{r}
+# Norma's section
 ```
 
 
