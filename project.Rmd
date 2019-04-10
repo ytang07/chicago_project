@@ -111,6 +111,9 @@ ggplot(filter(CPS.data, Average.Teacher.Attendance != 0)) +
 
 #
 ```
+1st graph: High safety scores indicate higher progress.
+
+2nd graph: Most progress happened when attendance was high for both parties. 
 
 ```{r}
 numeric.data
