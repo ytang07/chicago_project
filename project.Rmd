@@ -246,33 +246,41 @@ data = gather(data.frame(Full_Model = full.error,
                   Backwards  = backwards.error,
                   Forwards = forwards.error,
                   Lasso = lasso.error,
-                  Ridge = ridge.error), key = "Method", value = "Error")
+                  Ridge = ridge.error), key = "Method", value = "MSPE")
 print(ggplot(data) + 
-  geom_boxplot(aes(x = Method, y = Error, fill = Method)) +
+  geom_boxplot(aes(x = Method, y = MSPE, fill = Method)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 }
 ```
 
-#Student Attendance
+##Student Attendance
 ```{r}
 set.seed(123)
 which.model("Average.Student.Attendance")
 ```
 
-#Safety Score Best Model
+##Safety Score Best Model
 ```{r}
 set.seed(123)
 which.model("Safety.Score")
 ```
+
 ##Environment Score Best Model
 ```{r}
 set.seed(123)
 which.model("Environment.Score")
 ```
+
 ##Instruction Score Best Model
 ```{r}
 set.seed(123)
 which.model("Environment.Score")
+```
+
+#Rate of Misconduct
+```{r}
+set.seed(123)
+which.model("Rate.of.Misconducts..per.100.students.")
 ```
 
 
