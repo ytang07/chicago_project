@@ -7,7 +7,7 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-if(!require(neuralnet)) { install.packages("neuralnet", repos = "http://cran.us.r-project.org");  
+if(!require(neuralnet)) { install.packages("neuralnet", repos = "http://cran.us.r-project.org")}  
 ```
 
 ```{r}
