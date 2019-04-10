@@ -18,6 +18,7 @@ library(purrr)
 library(leaps)
 library(glmnet)
 library(neuralnet)
+library(tidyr)
 ```
 
 #Data Cleaning
@@ -189,10 +190,18 @@ Goal - determine best model between lasso regression, ridge regression, and leas
 
 
 ```{r}
+full.error <- rep(0, 50)
+backwards.error <- rep(0, 50)
+forwards.error <- rep(0, 50)
+lasso.error <- rep(0, 50)
+ridge.error <- rep(0, 50)
+
 #Data frame with no NA values
 no.na <- na.omit(numeric.data)
+
+for(i in 1:50){
 test.set <- sample_n(no.na, 100)
-train.set <- anti_join(no.na, test.set)
+train.set <- suppressMessages(anti_join(no.na, test.set))
 
 #Least Squares Model
 fullLinMod.SA <- lm(Average.Student.Attendance~., data = train.set)
@@ -212,20 +221,94 @@ ridgeMod = cv.glmnet(modMatrix, y = train.set$Average.Student.Attendance, alpha 
 full.predictions <- predict(fullLinMod.SA, test.set)
 backwards.predictions <- predict(backwards, test.set)
 forwards.predictions <- predict(forwards, test.set)
-lasso.predictions <- predict(lassoMod, test.set, type = "response")
 
+newX <- model.matrix(~.-Average.Student.Attendance, data=test.set)
+lasso.predictions <- predict(lassoMod, s= lassoMod$lambda.min, newx= newX)
+ridge.predictions <- predict(ridgeMod, s= ridgeMod$lambda.min, newx= newX)
 
 
 MSE.full = mean((full.predictions - test.set$Average.Student.Attendance)^2)
 MSE.back = mean((backwards.predictions - test.set$Average.Student.Attendance)^2)
 MSE.for = mean((forwards.predictions - test.set$Average.Student.Attendance)^2)
+MSE.lasso = mean((lasso.predictions - test.set$Average.Student.Attendance)^2)
+MSE.ridge = mean((ridge.predictions - test.set$Average.Student.Attendance)^2)
 
+full.error[[i]] <- MSE.full
+backwards.error[[i]] <- MSE.back
+forwards.error[[i]] <- MSE.for
+lasso.error[[i]] <- MSE.lasso
+ridge.error[[i]] <- MSE.ridge
+}
 
-MSE.full
-MSE.back
-MSE.for
+data = gather(data.frame(Full_Model = full.error,
+                  Backwards  = backwards.error,
+                  Forwards = forwards.error,
+                  Lasso = lasso.error,
+                  Ridge = ridge.error), key = "Method", value = "Error")
+ggplot(data) + 
+  geom_boxplot(aes(x = Method, y = Error, fill = Method))
 ```
 
+
+```{r}
+full.error <- rep(0, 50)
+backwards.error <- rep(0, 50)
+forwards.error <- rep(0, 50)
+lasso.error <- rep(0, 50)
+ridge.error <- rep(0, 50)
+
+#Data frame with no NA values
+no.na <- na.omit(numeric.data)
+
+for(i in 1:50){
+test.set <- sample_n(no.na, 100)
+train.set <- suppressMessages(anti_join(no.na, test.set))
+
+#Least Squares Model
+fullLinMod.SA <- lm(Average.Student.Attendance~., data = train.set)
+
+#Stepwise
+backwards <- step(fullLinMod.SA, direction = "backward", trace = FALSE)
+forwards <- step(fullLinMod.SA, direction = "backward", trace = FALSE)
+
+#Lasso Regression
+modMatrix <- model.matrix(Average.Student.Attendance~., data= train.set)
+lassoMod = cv.glmnet(modMatrix, y = train.set[,"Average.Student.Attendance"], alpha = 1, nfolds = 5)
+
+#Ridge Regression
+ridgeMod = cv.glmnet(modMatrix, y = train.set[,"Average.Student.Attendance"], alpha = 0, nfolds = 5)
+
+#predictions
+full.predictions <- predict(fullLinMod.SA, test.set)
+backwards.predictions <- predict(backwards, test.set)
+forwards.predictions <- predict(forwards, test.set)
+
+newX <- model.matrix(~.-Average.Student.Attendance, data=test.set)
+lasso.predictions <- predict(lassoMod, s= lassoMod$lambda.min, newx= newX)
+ridge.predictions <- predict(ridgeMod, s= ridgeMod$lambda.min, newx= newX)
+
+
+MSE.full = mean((full.predictions - test.set$Average.Student.Attendance)^2)
+MSE.back = mean((backwards.predictions - test.set$Average.Student.Attendance)^2)
+MSE.for = mean((forwards.predictions - test.set$Average.Student.Attendance)^2)
+MSE.lasso = mean((lasso.predictions - test.set$Average.Student.Attendance)^2)
+MSE.ridge = mean((ridge.predictions - test.set$Average.Student.Attendance)^2)
+
+full.error[[i]] <- MSE.full
+backwards.error[[i]] <- MSE.back
+forwards.error[[i]] <- MSE.for
+lasso.error[[i]] <- MSE.lasso
+ridge.error[[i]] <- MSE.ridge
+}
+
+data = gather(data.frame(Full_Model = full.error,
+                  Backwards  = backwards.error,
+                  Forwards = forwards.error,
+                  Lasso = lasso.error,
+                  Ridge = ridge.error), key = "Method", value = "Error")
+ggplot(data) + 
+  geom_boxplot(aes(x = Method, y = Error, fill = Method))
+```
 
 
 ##Classification for School Grade-level
