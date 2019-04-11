@@ -380,9 +380,10 @@ data.progress[,"CPS.data"] <- NULL
 data.progress[,"School.ID"] <- NULL
 data.progress[,"Ward"] <- NULL
 data.progress[,"General.Services.Route" ] <- NULL
+data.progress[,"Police.District" ] <- NULL
 data.progress <- na.omit(data.progress)
 
-PCA.cps <- prcomp(data.progress[2:10], center = TRUE, scale. = TRUE, rank = 3)
+PCA.cps <- prcomp(data.progress[1:12], center = TRUE, scale. = TRUE, rank = 3)
 
 plot(PCA.cps)
 
@@ -403,10 +404,9 @@ PC.weights <- PC.weights[order(abs(PC.weights$PC2), decreasing = TRUE),]
 head(PC.weights)
 ```
 
-*PC1 emphasizes test scores, environment scores, and student attendance
-*PC2 emphasizes Instruction Socre, Environment Score, test scores, and student attendance
+*PC1's magnitude emphasizes better safety/environment and test taking.  This definitely did the best job at separating the data between the two.
 
-
+*PC2 correlates with better teaching, college enrollment, math, and environment
 
 
 ```{r}
