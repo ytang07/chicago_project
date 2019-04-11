@@ -19,6 +19,7 @@ library(leaps)
 library(glmnet)
 library(neuralnet)
 library(tidyr)
+library(pls)
 ```
 
 #Data Cleaning
@@ -197,6 +198,7 @@ backwards.error <- rep(0, 50)
 forwards.error <- rep(0, 50)
 lasso.error <- rep(0, 50)
 ridge.error <- rep(0, 50)
+pcr.error <- rep(0, 50)
 
 #Data frame with no NA values
 no.na <- na.omit(numeric.data)
@@ -219,6 +221,9 @@ lassoMod = cv.glmnet(modMatrix, y = train.set[,vrbl], alpha = 1, nfolds = 5)
 #Ridge Regression
 ridgeMod = cv.glmnet(modMatrix, y = train.set[,vrbl], alpha = 0, nfolds = 5)
 
+#PCR
+pcrMod <- pcr(as.formula(paste(vrbl, "~.")), data=train.set, scale=TRUE)
+
 #predictions
 full.predictions <- predict(fullLinMod.SA, test.set)
 backwards.predictions <- predict(backwards, test.set)
@@ -227,29 +232,33 @@ forwards.predictions <- predict(forwards, test.set)
 newX <- model.matrix(as.formula(paste("~.-", vrbl)), data=test.set)
 lasso.predictions <- predict(lassoMod, s= lassoMod$lambda.min, newx= newX)
 ridge.predictions <- predict(ridgeMod, s= ridgeMod$lambda.min, newx= newX)
-
+pcr.predictions <- predict(pcrMod, test.set)
 
 MSE.full = mean((full.predictions - test.set[,vrbl])^2)
 MSE.back = mean((backwards.predictions - test.set[,vrbl])^2)
 MSE.for = mean((forwards.predictions - test.set[,vrbl])^2)
 MSE.lasso = mean((lasso.predictions - test.set[,vrbl])^2)
 MSE.ridge = mean((ridge.predictions - test.set[,vrbl])^2)
+MSE.pcr = mean((pcr.predictions - test.set[,vrbl])^2)
 
 full.error[[i]] <- MSE.full
 backwards.error[[i]] <- MSE.back
 forwards.error[[i]] <- MSE.for
 lasso.error[[i]] <- MSE.lasso
 ridge.error[[i]] <- MSE.ridge
+pcr.error[[i]] <- MSE.pcr
 }
 
 data = gather(data.frame(Full_Model = full.error,
                   Backwards  = backwards.error,
                   Forwards = forwards.error,
                   Lasso = lasso.error,
-                  Ridge = ridge.error), key = "Method", value = "MSPE")
+                  Ridge = ridge.error,
+                  PCR = pcr.error), key = "Method", value = "MSPE")
 print(ggplot(data) + 
   geom_boxplot(aes(x = Method, y = MSPE, fill = Method)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))) +
+  ggtitle(paste("Model Errors for Predicting ", vrbl))
 }
 ```
 
@@ -356,6 +365,46 @@ newdata$`CPS.data$Elementary..Middle..or.High.School`<- NULL
 
 ldaMod <- lda(Elementary..Middle..or.High.School~., data = newdata)
 ```
+```{r}
+names(data.progress)
+```
+
+#PCA to hopefully find separation in categories
+```{r}
+data.progress <- cbind(CPS.data$Adequate.Yearly.Progress.Made.,numeric.data)
+data.progress$Adequate.Yearly.Progress.Made. <- data.progress[,"CPS.data$Adequate.Yearly.Progress.Made."]
+data.progress[,"CPS.data$Adequate.Yearly.Progress.Made."] <- NULL
+data.progress[,"ZIP.Code"] <- NULL
+data.progress[,"Community.Area.Number"] <- NULL
+data.progress[,"CPS.data"] <- NULL
+data.progress[,"School.ID"] <- NULL
+data.progress[,"Ward"] <- NULL
+data.progress[,"General.Services.Route" ] <- NULL
+data.progress <- na.omit(data.progress)
+
+PCA.cps <- prcomp(data.progress[2:10], center = TRUE, scale. = TRUE, rank = 3)
+
+plot(PCA.cps)
+
+ggbiplot(PCA.cps, choices = c(1,2), obs.scale = 1, var.scale = 1, group = data.progress$Adequate.Yearly.Progress.Made., ellipse = TRUE, varname.size=0, var.axes = F) + 
+  scale_color_discrete() + 
+  theme(legend.direction = 'horizontal', legend.position = 'top') +
+  ggtitle("PC Value Separations")
+```
+###Inspecting PC value weights
+```{r}
+#In order of PC1 Vlaues
+PC.weights <- as.data.frame(PCA.cps$rotation)[,1:2]
+PC.weights <- PC.weights[order(abs(PC.weights$PC1), decreasing = TRUE),]
+head(PC.weights)
+
+#In order of PC2 Values
+PC.weights <- PC.weights[order(abs(PC.weights$PC2), decreasing = TRUE),]
+head(PC.weights)
+```
+
+*PC1 emphasizes test scores, environment scores, and student attendance
+*PC2 emphasizes Instruction Socre, Environment Score, test scores, and student attendance
 
 
 
