@@ -58,8 +58,9 @@ numeric.data <- CPS.data[, map_lgl(CPS.data, is.numeric)]
 head(numeric.data)
 ```
 
-```{r, warning= F }
 # Erin's section
+```{r }
+#preparing data for logistic regression
 CPS.data1 <- CPS.data %>%
   filter(!is.na(Adequate.Yearly.Progress.Made.)) %>%
   mutate(y = ifelse(Adequate.Yearly.Progress.Made. == "Yes", 1, 0))
@@ -71,26 +72,27 @@ numeric.data1$ISAT.Value.Add.Read <- NULL
 
 numeric.data1 <- na.omit(numeric.data1)
 
-
-
 #logistic regression to predict yearly progress
 
 bestglm::bestglm(numeric.data1, family = binomial)
 ```
 
 ```{r}
-logit.mod <- glm(y ~ Safety.Score + Average.Student.Attendance + ISAT.Exceeding.Reading.. + College.Enrollment..number.of.students., data = numeric.data1, family = "binomial")
+#best model found above
+logit.mod <- glm(y ~  Average.Student.Attendance + ISAT.Exceeding.Reading.. + College.Enrollment..number.of.students., data = numeric.data1, family = "binomial")
 summary(logit.mod)
 ```
 
 ```{r}
-gstatistic = 359.2 - 145.7
-df = 4
-1 - pchisq(gstatistic, df)
+#test for goodness of fit using g-statistic
+gstatistic = 359.23 - 148.22 
+df = 3
+1.00 - pchisq(gstatistic, df)
 ```
 
 ```{r}
-confusion = function(yhat, y, quietly = FALSE){
+#confusion matrix for predicted values
+confusion = function(yhat, y, quietly = F){
 if(!quietly)
 message("yhat is the vector of predicted outcomes, possibly a factor.\n
 Sensitivity = (first level predicted) / (first level actual) \n
@@ -105,11 +107,34 @@ specificity = confusion_mat[2, 2]/sum(confusion_mat[, 2]))
 return(list(confusion_mat = confusion_mat, stats = stats))
 }
 
-confusion(round(logit.mod$fitted.values), (numeric.data1$y), quietly = F)
+confusion(round(logit.mod$fitted.values), (numeric.data1$y), quietly = T)
 ```
 
 ```{r}
+#k nearest neighbors model - cross validation using different values of K 
+knn_mods <- list()
+set.seed(1234)
+numeric.data2 <- numeric.data1
+numeric.data2$y <- NULL
+k.data <- sort(sample(nrow(numeric.data2), nrow(numeric.data2)*.75))
+k.train <- numeric.data2[k.data,]
+k.test <- numeric.data2[-k.data,]
 
+for (i in 1:10){
+  
+  knn_mods[[i]] = knn(k.train, k.test, cl = numeric.data1[k.data,]$y, k = i)
+  
+}
+
+knn_results = lapply(knn_mods, FUN = function(x){
+  
+  return(confusion(x, numeric.data1[-k.data,]$y, quietly = TRUE)$stats)
+  
+  })
+
+knn_results = bind_rows(knn_results)
+knn_results$K = 1:10
+ggplot(knn_results, aes(x = specificity, y = sensitivity, label = K)) + geom_point() + geom_text(hjust = 2)
 ```
 
 ```{r}
