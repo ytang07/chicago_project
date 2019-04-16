@@ -58,17 +58,18 @@ numeric.data <- CPS.data[, map_lgl(CPS.data, is.numeric)]
 head(numeric.data)
 ```
 
-```{r}
+```{r, warning= F }
 # Erin's section
 CPS.data1 <- CPS.data %>%
   filter(!is.na(Adequate.Yearly.Progress.Made.)) %>%
-  mutate(y = ifelse(Adequate.Yearly.Progress.Made. == "Yes", 1, 0)) 
+  mutate(y = ifelse(Adequate.Yearly.Progress.Made. == "Yes", 1, 0))
 CPS.data1$Adequate.Yearly.Progress.Made. <- NULL
 numeric.data1 <- CPS.data1[, map_lgl(CPS.data1, is.numeric)]
 numeric.data1$School.ID <- NULL
 numeric.data1$ISAT.Value.Add.Math <- NULL
 numeric.data1$ISAT.Value.Add.Read <- NULL
-na.omit(numeric.data1)
+
+numeric.data1 <- na.omit(numeric.data1)
 
 
 
@@ -78,7 +79,8 @@ bestglm::bestglm(numeric.data1, family = binomial)
 ```
 
 ```{r}
-glm(y ~ Safety.Score + Average.Student.Attendance + ISAT.Exceeding.Reading.. + College.Enrollment..number.of.students., data = numeric.data1, family = binomial)
+logit.mod <- glm(y ~ Safety.Score + Average.Student.Attendance + ISAT.Exceeding.Reading.. + College.Enrollment..number.of.students., data = numeric.data1, family = "binomial")
+summary(logit.mod)
 ```
 
 ```{r}
@@ -87,6 +89,28 @@ df = 4
 1 - pchisq(gstatistic, df)
 ```
 
+```{r}
+confusion = function(yhat, y, quietly = FALSE){
+if(!quietly)
+message("yhat is the vector of predicted outcomes, possibly a factor.\n
+Sensitivity = (first level predicted) / (first level actual) \n
+Specificity = (second level predicted) / (second level actual)")
+if(!is.factor(y) & is.factor(yhat))
+y = as.factor(y)
+if(!all.equal(levels(yhat), levels(y)))
+stop("Factor levels of yhat and y do not match.")
+confusion_mat = table(yhat, y, deparse.level = 2)
+stats = data.frame(sensitivity = confusion_mat[1, 1]/sum(confusion_mat[, 1]),
+specificity = confusion_mat[2, 2]/sum(confusion_mat[, 2]))
+return(list(confusion_mat = confusion_mat, stats = stats))
+}
+
+confusion(round(logit.mod$fitted.values), (numeric.data1$y), quietly = F)
+```
+
+```{r}
+
+```
 
 ```{r}
 # Charles' section
