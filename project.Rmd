@@ -60,7 +60,33 @@ head(numeric.data)
 
 ```{r}
 # Erin's section
+CPS.data1 <- CPS.data %>%
+  filter(!is.na(Adequate.Yearly.Progress.Made.)) %>%
+  mutate(y = ifelse(Adequate.Yearly.Progress.Made. == "Yes", 1, 0)) 
+CPS.data1$Adequate.Yearly.Progress.Made. <- NULL
+numeric.data1 <- CPS.data1[, map_lgl(CPS.data1, is.numeric)]
+numeric.data1$School.ID <- NULL
+numeric.data1$ISAT.Value.Add.Math <- NULL
+numeric.data1$ISAT.Value.Add.Read <- NULL
+na.omit(numeric.data1)
+
+
+
+#logistic regression to predict yearly progress
+
+bestglm::bestglm(numeric.data1, family = binomial)
 ```
+
+```{r}
+glm(y ~ Safety.Score + Average.Student.Attendance + ISAT.Exceeding.Reading.. + College.Enrollment..number.of.students., data = numeric.data1, family = binomial)
+```
+
+```{r}
+gstatistic = 359.2 - 145.7
+df = 4
+1 - pchisq(gstatistic, df)
+```
+
 
 ```{r}
 # Charles' section
