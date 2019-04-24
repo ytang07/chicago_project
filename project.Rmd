@@ -8,6 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+#data from https://data.cityofchicago.org/api/assets/B6741303-EA32-467D-9E33-5CE949ACCDD8
 knitr::opts_chunk$set(echo = TRUE)
 if(!require(neuralnet)) { install.packages("neuralnet", repos = "http://cran.us.r-project.org")}  
 ```
@@ -174,9 +175,7 @@ sum(abs(nnpred1_results - aboveavg))
 
 ```
 
-```{r}
-# Norma's section
-```
+
 
 
 #Ryan's Section
@@ -590,8 +589,3 @@ head(PC.weights)
 *PC1's magnitude emphasizes better safety/environment and test taking.  This definitely did the best job at separating the data between the two.
 
 *PC2 correlates with better teaching, college enrollment, math, and environment
-
-
-```{r}
-# Jason's section
-```
