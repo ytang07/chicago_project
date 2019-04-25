@@ -144,6 +144,21 @@ confusion(knn.mod, numeric.data1[-k.data,]$y )
 confusionMatrix(as.factor(round(logit.mod$fitted.values)), as.factor(numeric.data1$y), positive = "1")
 confusionMatrix(as.factor(knn.mod), as.factor(numeric.data1[-k.data,]$y), positive = "1")
 ```
+```{r}
+#LDA preliminary
+#seeing if any numerical variables appear normal
+for (i in 1:15){
+  hist(numeric.data1[,i])
+}
+```
+
+
+```{r}
+#examining variables that seem normally distributed - exploring possibility of LDA
+hist(numeric.data1$Safety.Score, main = "Histogram Safety Score", xlab = "Safety Score")
+hist(numeric.data1$Instruction.Score, main = "Histogram Instruction Score", xlab = "Instruction Score")
+hist(numeric.data1$Environment.Score, main = "Histogram Environment Score", xlab = "Environment Score")
+```
 
 ```{r, eval=F}
 # Charles' section
