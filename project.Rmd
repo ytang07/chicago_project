@@ -352,7 +352,8 @@ set.seed(123)
 which.model("Average.Student.Attendance")
 ```
 
-```{r}
+```{r, eval=F}
+no.na = na.omit(numeric.data)
 MSE.list <- rep(0, 50)
 for(i in 1:50){
 test <- sample_n(no.na, 100)
@@ -374,17 +375,7 @@ boxplot(MSE.list)
 ```
 
 
-```{r}
-transformed.data <- numeric.data
-for(n in names(numeric.data)) {
-  #transformed.data[,paste("log ",n)] <- log(transformed.data[,n])
-  transformed.data[,paste(n, "squared")] <- transformed.data[,n]^2
-  transformed.data[,paste(n, "cubed")] <- I(transformed.data[,n]^3)
-  transformed.data[,paste(n, "fourth power")] <- I(transformed.data[,n]^4)
-}
-transformed.data <- na.omit(transformed.data)
-transformed.data <-  transformed.data[!is.infinite(rowSums(transformed.data)),]
-```
+
 
 #Backwards Regression MSE plot
 ```{r}
@@ -412,11 +403,6 @@ backwards.residual = backwards.predictions - test.set[,"Environment.Score"]
 
 data = data.frame(Prediction_Error  = backwards.residual,
                   Test_Value = test.set$Environment.Score)
-
-ggplot(data) +
-  geom_point(aes(x= Test_Value, y = Prediction_Error), color = "blue4", size = 2) +
-  geom_hline(yintercept = 0, color ="red", size = 1) +
-  ggtitle("Prediction Errors With CV")
 
 mean(backwards.residual^2)
 ```
@@ -590,6 +576,66 @@ head(PC.weights)
 *PC1's magnitude emphasizes better safety/environment and test taking.  This definitely did the best job at separating the data between the two.
 
 *PC2 correlates with better teaching, college enrollment, math, and environment
+
+#Testing Transformations
+```{r}
+transformed.data <- numeric.data
+for(n in names(numeric.data)) {
+  if(n != "Average.Student.Attendance"){
+  transformed.data[,paste("log ",n)] <- log(transformed.data[,n])
+  transformed.data[,paste(n, "squared")] <- transformed.data[,n]^2
+  transformed.data[,paste("sqrt", n)] <- sqrt(I(transformed.data[,n]))
+  }
+}
+transformed.data <- na.omit(transformed.data)
+transformed.data <-  transformed.data[!is.infinite(rowSums(transformed.data)),]
+```
+
+```{r}
+mod <- lm(Average.Student.Attendance~. ,data=transformed.data)
+backwards.transformed <- step(mod, dir = "backward", trace = F, )
+summary(backwards.transformed)
+```
+
+```{r}
+test <- sample_n(transformed.data, 40)
+train <- suppressMessages(anti_join(transformed.data, test))
+interactions.mod <- lm(formula = Average.Student.Attendance ~ Environment.Score*Instruction.Score + Rate.of.Misconducts..per.100.students. + 
+    ISAT.Exceeding.Math..*ISAT.Exceeding.Reading.. + ISAT.Value.Add.Math + 
+    Police.District + `sqrt Safety.Score`*`sqrt Environment.Score` + 
+    `sqrt Instruction.Score` + `log  Rate.of.Misconducts..per.100.students.` + 
+    `Rate.of.Misconducts..per.100.students. squared` + `sqrt Rate.of.Misconducts..per.100.students.` + 
+    `Average.Teacher.Attendance squared` + `log  ISAT.Exceeding.Reading..` + 
+    `ISAT.Exceeding.Reading.. squared` + `ISAT.Value.Add.Math squared` + 
+    `sqrt ISAT.Value.Add.Math` + `ISAT.Value.Add.Read squared` + 
+    `log  College.Enrollment..number.of.students.` + `sqrt College.Enrollment..number.of.students.`, data = train)
+
+predictions <- predict(interactions.mod, test)
+error <- predictions - test$Average.Student.Attendance
+MSPE <- mean(error^2)
+MSPE
+```
+
+```{r}
+transformed.data <- numeric.data
+for(n in names(numeric.data)) {
+  if(n != "Rate.of.Misconducts..per.100.students."){
+  transformed.data[,paste("log ",n)] <- log(transformed.data[,n])
+  transformed.data[,paste(n, "squared")] <- transformed.data[,n]^2
+  transformed.data[,paste("sqrt", n)] <- sqrt(I(transformed.data[,n]))
+  }
+}
+transformed.data <- na.omit(transformed.data)
+transformed.data <-  transformed.data[!is.infinite(rowSums(transformed.data)),]
+```
+
+```{r}
+mod <- lm(Rate.of.Misconducts..per.100.students.~. ,data=transformed.data)
+backwards.transformed <- step(mod, dir = "backward", trace = F, )
+summary(backwards.transformed)
+```
+
+
 
 
 ```{r}
