@@ -294,7 +294,7 @@ fullLinMod.SA <- lm(as.formula(paste(vrbl, "~.")), data = train.set)
 
 #Stepwise
 backwards <- step(fullLinMod.SA, direction = "backward", trace = FALSE)
-forwards <- step(fullLinMod.SA, direction = "backward", trace = FALSE)
+forwards <- step(fullLinMod.SA, direction = "forward", trace = FALSE)
 
 #Lasso Regression
 modMatrix <- model.matrix(as.formula(paste(vrbl, "~.")), data= train.set)
@@ -631,7 +631,7 @@ transformed.data <-  transformed.data[!is.infinite(rowSums(transformed.data)),]
 
 ```{r}
 mod <- lm(Rate.of.Misconducts..per.100.students.~. ,data=transformed.data)
-backwards.transformed <- step(mod, dir = "backward", trace = F, )
+backwards.transformed <- step(mod, dir = "both", trace = F)
 summary(backwards.transformed)
 ```
 
@@ -641,5 +641,3 @@ summary(backwards.transformed)
 ```{r}
 # Jason's section
 ```
-=======
->>>>>>> ff0baecaece3f62d661039b3cce7868e8e7a87cb
