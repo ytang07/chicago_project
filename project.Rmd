@@ -2,10 +2,13 @@
 title: "project"
 author: "Erin Lyons, Yujian Tang, Norma Techarukpong, Ryan Thomas, Jason Yu"
 date: "April 3, 2019"
-output: pdf_document
+output:
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
+#data from https://data.cityofchicago.org/api/assets/B6741303-EA32-467D-9E33-5CE949ACCDD8
 knitr::opts_chunk$set(echo = TRUE)
 if(!require(neuralnet)) { install.packages("neuralnet", repos = "http://cran.us.r-project.org")}  
 ```
@@ -20,6 +23,8 @@ library(glmnet)
 library(neuralnet)
 library(tidyr)
 library(pls)
+library(devtools)
+library(ggbiplot)
 ```
 
 #Data Cleaning
@@ -140,7 +145,7 @@ confusionMatrix(as.factor(round(logit.mod$fitted.values)), as.factor(numeric.dat
 confusionMatrix(as.factor(knn.mod), as.factor(numeric.data1[-k.data,]$y), positive = "1")
 ```
 
-```{r}
+```{r, eval=F}
 # Charles' section
 # set seed
 set.seed(100)
@@ -169,9 +174,7 @@ sum(abs(nnpred1_results - aboveavg))
 
 ```
 
-```{r}
-# Norma's section
-```
+
 
 
 #Ryan's Section
@@ -290,7 +293,7 @@ fullLinMod.SA <- lm(as.formula(paste(vrbl, "~.")), data = train.set)
 
 #Stepwise
 backwards <- step(fullLinMod.SA, direction = "backward", trace = FALSE)
-forwards <- step(fullLinMod.SA, direction = "backward", trace = FALSE)
+forwards <- step(fullLinMod.SA, direction = "forward", trace = FALSE)
 
 #Lasso Regression
 modMatrix <- model.matrix(as.formula(paste(vrbl, "~.")), data= train.set)
@@ -331,12 +334,13 @@ data = gather(data.frame(Full_Model = full.error,
                   Backwards  = backwards.error,
                   Forwards = forwards.error,
                   Lasso = lasso.error,
-                  Ridge = ridge.error,
-                  PCR = pcr.error), key = "Method", value = "MSPE")
+                  Ridge = ridge.error),
+                  #PCR = pcr.error), 
+              key = "Method", value = "MSPE")
 print(ggplot(data) + 
   geom_boxplot(aes(x = Method, y = MSPE, fill = Method)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))) +
-  ggtitle(paste("Model Errors for Predicting ", vrbl))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle(paste("Model Errors for Predicting ", vrbl)))
 }
 ```
 
@@ -346,11 +350,90 @@ set.seed(123)
 which.model("Average.Student.Attendance")
 ```
 
+```{r, eval=F}
+no.na = na.omit(numeric.data)
+MSE.list <- rep(0, 50)
+for(i in 1:50){
+test <- sample_n(no.na, 100)
+train <- anti_join(no.na, test)
+#Lasso Regression
+modMatrix <- model.matrix(as.formula(paste("Rate.of.Misconducts..per.100.students.", "~Average.Student.Attendance*sqrt(ISAT.Exceeding.Math..)+.")), data= train)
+lassoMod = cv.glmnet(modMatrix, y = train[,"Rate.of.Misconducts..per.100.students."], alpha = 1, nfolds = 5)
+
+mod <- lm(Rate.of.Misconducts..per.100.students.~Average.Student.Attendance+(sqrt(ISAT.Exceeding.Math..))+., data = train)
+
+newX <- model.matrix(as.formula(paste("~Average.Student.Attendance*ISAT.Exceeding.Math..+.-", "Rate.of.Misconducts..per.100.students.")), data=test)
+
+predictions <- predict(lassoMod, s= lassoMod$lambda.min, newx= newX)
+error <- predictions - test$Rate.of.Misconducts..per.100.students.
+MSE.list[[i]] <- mean(error^2)
+}
+
+boxplot(MSE.list)
+```
+
+
+
+
+#Backwards Regression MSE plot
+```{r}
+no.na <- na.omit(numeric.data)
+#Least Squares Model
+fullLinMod.SA <- lm(ISAT.Exceeding.Math..~., data = no.na)
+
+#Stepwise
+backwards <- step(fullLinMod.SA, direction = "forward", trace = FALSE)
+summary(backwards)
+```
+
+```{r, message= F}
+data <- transformed.data[ , names(transformed.data) != "Environment.Score squared" & names(transformed.data) != "log  Environment.Score" & names(transformed.data) != "Environment.Score cubed" & names(transformed.data) != "Environment.Score fourth power"]
+test.set <- sample_n(transformed.data, 100)
+training.set <- anti_join(test.set, transformed.data)
+#Least Squares Model
+fullLinMod.SA <- lm(Environment.Score~., data = data)
+
+#Stepwise
+backwards <- step(fullLinMod.SA, direction = "backward", trace = FALSE)
+backwards.predictions <- predict(backwards, test.set)
+
+backwards.residual = backwards.predictions - test.set[,"Environment.Score"]
+
+data = data.frame(Prediction_Error  = backwards.residual,
+                  Test_Value = test.set$Environment.Score)
+
+mean(backwards.residual^2)
+```
+
+
 ##Safety Score Best Model
 ```{r}
 set.seed(123)
 which.model("Safety.Score")
 ```
+
+
+```{r}
+transformed.data <- na.omit(transformed.data)
+transformed.data <-  transformed.data[!is.infinite(rowSums(transformed.data)),]
+data <- transformed.data[ , names(transformed.data) != "Rate.of.Misconducts..per.100.students. squared" & names(transformed.data) != "log  Rate.of.Misconducts..per.100.students." & names(transformed.data) != "Rate.of.Misconducts..per.100.students. cubed" & names(transformed.data) != "Rate.of.Misconducts..per.100.students. fourth power"]
+#Lasso Regression
+modMatrix <- model.matrix(as.formula(paste("Rate.of.Misconducts..per.100.students.", "~.")), data= na.omit(data))
+lassoMod = cv.glmnet(modMatrix, y = na.omit(data)[,"Rate.of.Misconducts..per.100.students."], alpha = 1, nfolds = 5)
+```
+
+
+```{r}
+transformed.data <- numeric.data
+#Lasso Regression
+modMatrix <- model.matrix(as.formula(paste("Rate.of.Misconducts..per.100.students. ", "~.")), data= na.omit(transformed.data))
+lassoMod = cv.glmnet(modMatrix, y = na.omit(transformed.data)[,"Rate.of.Misconducts..per.100.students."], alpha = 1, nfolds = 5)
+predict(lassoMod, type = "coefficients")
+plot(lassoMod)
+```
+
+
+
 
 ##Environment Score Best Model
 ```{r}
@@ -361,7 +444,7 @@ which.model("Environment.Score")
 ##Instruction Score Best Model
 ```{r}
 set.seed(123)
-which.model("Environment.Score")
+which.model("Instruction.Score")
 ```
 
 #Rate of Misconduct
@@ -370,6 +453,15 @@ set.seed(123)
 which.model("Rate.of.Misconducts..per.100.students.")
 ```
 
+#Exceeding Math
+```{r}
+which.model("ISAT.Exceeding.Math..")
+```
+
+#Exceeding Reading
+```{r}
+which.model("ISAT.Exceeding.Reading..")
+```
 
 
 ##Classification for School Grade-level
@@ -436,16 +528,13 @@ newdata = numeric.data %>%
   select_if(is.numeric)
 
 newdata <- remove.collinearity(newdata, .1)
-newdata
 newdata <- cbind(numeric.data, CPS.data$Elementary..Middle..or.High.School)
 newdata$Elementary..Middle..or.High.School <- newdata$`CPS.data$Elementary..Middle..or.High.School`
 newdata$`CPS.data$Elementary..Middle..or.High.School`<- NULL
 
 ldaMod <- lda(Elementary..Middle..or.High.School~., data = newdata)
 ```
-```{r}
-names(data.progress)
-```
+
 
 #PCA to hopefully find separation in categories
 ```{r}
@@ -485,6 +574,67 @@ head(PC.weights)
 *PC1's magnitude emphasizes better safety/environment and test taking.  This definitely did the best job at separating the data between the two.
 
 *PC2 correlates with better teaching, college enrollment, math, and environment
+<<<<<<< HEAD
+
+#Testing Transformations
+```{r}
+transformed.data <- numeric.data
+for(n in names(numeric.data)) {
+  if(n != "Average.Student.Attendance"){
+  transformed.data[,paste("log ",n)] <- log(transformed.data[,n])
+  transformed.data[,paste(n, "squared")] <- transformed.data[,n]^2
+  transformed.data[,paste("sqrt", n)] <- sqrt(I(transformed.data[,n]))
+  }
+}
+transformed.data <- na.omit(transformed.data)
+transformed.data <-  transformed.data[!is.infinite(rowSums(transformed.data)),]
+```
+
+```{r}
+mod <- lm(Average.Student.Attendance~. ,data=transformed.data)
+backwards.transformed <- step(mod, dir = "backward", trace = F, )
+summary(backwards.transformed)
+```
+
+```{r}
+test <- sample_n(transformed.data, 40)
+train <- suppressMessages(anti_join(transformed.data, test))
+interactions.mod <- lm(formula = Average.Student.Attendance ~ Environment.Score*Instruction.Score + Rate.of.Misconducts..per.100.students. + 
+    ISAT.Exceeding.Math..*ISAT.Exceeding.Reading.. + ISAT.Value.Add.Math + 
+    Police.District + `sqrt Safety.Score`*`sqrt Environment.Score` + 
+    `sqrt Instruction.Score` + `log  Rate.of.Misconducts..per.100.students.` + 
+    `Rate.of.Misconducts..per.100.students. squared` + `sqrt Rate.of.Misconducts..per.100.students.` + 
+    `Average.Teacher.Attendance squared` + `log  ISAT.Exceeding.Reading..` + 
+    `ISAT.Exceeding.Reading.. squared` + `ISAT.Value.Add.Math squared` + 
+    `sqrt ISAT.Value.Add.Math` + `ISAT.Value.Add.Read squared` + 
+    `log  College.Enrollment..number.of.students.` + `sqrt College.Enrollment..number.of.students.`, data = train)
+
+predictions <- predict(interactions.mod, test)
+error <- predictions - test$Average.Student.Attendance
+MSPE <- mean(error^2)
+MSPE
+```
+
+```{r}
+transformed.data <- numeric.data
+for(n in names(numeric.data)) {
+  if(n != "Rate.of.Misconducts..per.100.students."){
+  transformed.data[,paste("log ",n)] <- log(transformed.data[,n])
+  transformed.data[,paste(n, "squared")] <- transformed.data[,n]^2
+  transformed.data[,paste("sqrt", n)] <- sqrt(I(transformed.data[,n]))
+  }
+}
+transformed.data <- na.omit(transformed.data)
+transformed.data <-  transformed.data[!is.infinite(rowSums(transformed.data)),]
+```
+
+```{r}
+mod <- lm(Rate.of.Misconducts..per.100.students.~. ,data=transformed.data)
+backwards.transformed <- step(mod, dir = "both", trace = F)
+summary(backwards.transformed)
+```
+
+
 
 
 ```{r}
