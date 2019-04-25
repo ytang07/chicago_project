@@ -91,7 +91,7 @@ df = 3
 ```
 
 ```{r}
-#confusion matrix for predicted values
+#confusion matrix code from lecture notes
 confusion = function(yhat, y, quietly = F){
 if(!quietly)
 message("yhat is the vector of predicted outcomes, possibly a factor.\n
@@ -110,27 +110,26 @@ return(list(confusion_mat = confusion_mat, stats = stats))
 confusion(round(logit.mod$fitted.values), (numeric.data1$y), quietly = T)
 ```
 
+
 ```{r}
 #k nearest neighbors model - cross validation using different values of K 
+
 knn_mods <- list()
 set.seed(1234)
 numeric.data2 <- numeric.data1
 numeric.data2$y <- NULL
-k.data <- sort(sample(nrow(numeric.data2), nrow(numeric.data2)*.75))
+k.data <- sort(sample(nrow(numeric.data2), nrow(numeric.data2)*.70))
 k.train <- numeric.data2[k.data,]
 k.test <- numeric.data2[-k.data,]
-
 for (i in 1:20){
   knn_mods[[i]] = knn(k.train, k.test, cl = numeric.data1[k.data,]$y, k = i)
 }
-
 knn_results = lapply(knn_mods, FUN = function(x){
 return(confusion(x, numeric.data1[-k.data,]$y, quietly = TRUE)$stats)
  })
-
 knn_results = bind_rows(knn_results)
-knn_results$K = 1:10
-ggplot(knn_results, aes(x = specificity, y = sensitivity, label = K)) + geom_point() + geom_text(hjust = 2)
+knn_results$K = 1:20
+ggplot(knn_results, aes(x = specificity, y = sensitivity, label = K)) + geom_point() + geom_text(hjust=2, check_overlap = T) + xlim(0.2,1)+ labs(y= "specificity", x = "sensitivity", title = "K-Nearest Neighbors") 
 ```
 ```{r}
 knn.mod = knn(k.train, k.test, cl = numeric.data1[k.data,]$y, k = 1)
